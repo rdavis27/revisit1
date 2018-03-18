@@ -1,5 +1,6 @@
 library(shiny)
 library(png)
+library(rdrop2)
 #library(revisit)
 source("R/revisit.R")
 rvinit()
@@ -49,6 +50,18 @@ shinyServer(function(input, output, session) {
          filename <- paste0(file, ".", as.character(loadBn), ".R")
       }
       pathfilename <- paste0(casepath,"/",filename)
+      if (!file.exists(pathfilename)){
+         outputfile <- paste0("revisit","/",input$username,"/",pathfilename)
+         tryCatch(drop_download(outputfile, local_path = pathfilename),
+                  warning = function(w) {
+                     cat(file=stderr(), paste0("WARNING: ", w))
+                  },
+                  error = function(e) {
+                     cat(file=stderr(), paste0("***** ", e))
+                     cat(file=stderr(), paste0("***** File ", outputfile, " not found\n"))
+                     if (file.exists(pathfilename)) file.remove(pathfilename)
+                  })
+      }
       if (file.exists(pathfilename)){
          loadb(pathfilename)
          loadBn_succ <<- loadBn
@@ -80,6 +93,16 @@ shinyServer(function(input, output, session) {
       }
       rv$statusmsg <<- status
       print(status)
+   }
+
+   doSave <- function(file, saveBn, action){
+      description <- paste(input$username, "-", input$desc)
+      saveb(saveBn, description)
+      iend <- regexpr("/[^/]*$", file)
+      filedir <- substr(file, 1, iend)
+      outputdir <- paste0("revisit","/",input$username,"/",filedir)
+      drop_upload(file, path = outputdir)
+      updateNumericInput(session, "loadBn",  value = saveBn)
    }
 
    reactiveLoad <- reactive({
@@ -263,13 +286,12 @@ shinyServer(function(input, output, session) {
       filename <- paste0(casepath, "/", file, ".", as.character(saveBn), ".R") # prepend casepath
       if (file.exists(filename)){
          question <- paste("WARNING: ", filename, "exists. Overwrite it?")
+         sfilename <<- filename
          showModal(yesNoModal(msg = question, yesAction="ok", yesLabel="Yes", noLabel="No"))
          return()
       }
       rvenv$currcode <- unlist(strsplit(input$ace, "\n")) # update currcode
-      saveb(input$saveBn, paste(input$username, "-", input$desc))
-      print(paste("SAVE", input$saveBn, "|", input$desc))
-      updateNumericInput(session, "loadBn",  value = input$saveBn)
+      doSave(filename, input$saveBn, "SAVE")
    })
 
    yesNoModal <- function(msg="Continue?", yesAction="yes", yesLabel="Yes", noLabel="No"){
@@ -284,9 +306,7 @@ shinyServer(function(input, output, session) {
 
    observeEvent(input$ok, {
       rvenv$currcode <- unlist(strsplit(input$ace, "\n")) # update currcode
-      saveb(input$saveBn, input$desc)
-      print(paste("OVERWROTE", input$saveBn, "|", input$desc))
-      updateNumericInput(session, "loadBn",  value = input$saveBn)
+      doSave(sfilename, input$saveBn, "OVERWRITE")
       removeModal()
    })
 
