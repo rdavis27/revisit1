@@ -1,6 +1,8 @@
 library(shiny)
 library(png)
 library(rdrop2)
+library(reshape2) # add for examples
+library(ggplot2)  # add for examples
 #library(revisit)
 source("R/revisit.R")
 rvinit()
