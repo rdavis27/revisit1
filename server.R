@@ -40,8 +40,10 @@ shinyServer(function(input, output, session) {
       status <- ""
       if (loadBn < 0){
          filename <- paste0(file, ".R")
+         pathfilename <- paste0(casepath,"/",filename) # one common .R file
       } else if (loadBn == 0){
          filename <- paste0(file, ".0.R")
+         pathfilename <- paste0(casepath,"/",filename) # one common .0.R file
          # always recreate the .0.R file
          filename0 <- paste0(file, ".R")
          pathfilename0 <- paste0(casepath,"/",filename0)
@@ -50,19 +52,24 @@ shinyServer(function(input, output, session) {
          }
       } else {
          filename <- paste0(file, ".", as.character(loadBn), ".R")
-      }
-      pathfilename <- paste0(casepath,"/",filename)
-      if (!file.exists(pathfilename)){
-         outputfile <- paste0("revisit","/",input$username,"/",pathfilename)
-         tryCatch(drop_download(outputfile, local_path = pathfilename),
-                  warning = function(w) {
-                     cat(file=stderr(), paste0("WARNING: ", w))
-                  },
-                  error = function(e) {
-                     cat(file=stderr(), paste0("***** ", e))
-                     cat(file=stderr(), paste0("***** File ", outputfile, " not found\n"))
-                     if (file.exists(pathfilename)) file.remove(pathfilename)
-                  })
+         pathfilename <- paste0(input$username,"/",casepath,"/",filename)
+         if (!file.exists(pathfilename)){
+            outputfile <- paste0("revisit","/",pathfilename)
+            iend <- regexpr("/[^/]*$", pathfilename)
+            pathfiledir <- substr(pathfilename, 1, iend)
+            if (dir.exists(pathfiledir) == FALSE){
+               dir.create(pathfiledir, recursive = TRUE)
+            }
+            tryCatch(drop_download(outputfile, local_path = pathfilename),
+                     warning = function(w) {
+                        cat(file=stderr(), paste0("WARNING: ", w))
+                     },
+                     error = function(e) {
+                        cat(file=stderr(), paste0("***** ", e))
+                        cat(file=stderr(), paste0("***** File ", outputfile, " not found\n"))
+                        if (file.exists(pathfilename)) file.remove(pathfilename)
+                     })
+         }
       }
       if (file.exists(pathfilename)){
          loadb(pathfilename)
@@ -74,11 +81,11 @@ shinyServer(function(input, output, session) {
          updateNumericInput(session, "runthru",  value = length(rvenv$currcode))
          nextBn <- loadBn + 1
          filename <- paste0(file, ".", as.character(nextBn), ".R")
-         pathfilename <- paste0(casepath,"/",filename)
+         pathfilename <- paste0(input$username,"/",casepath,"/",filename)
          while (file.exists(pathfilename)){
             nextBn <- nextBn + 1
             filename <- paste0(file, ".", as.character(nextBn), ".R")
-            pathfilename <- paste0(casepath,"/",filename)
+            pathfilename <- paste0(input$username,"/",casepath,"/",filename)
          }
          updateNumericInput(session, "saveBn",  value = nextBn)
       } else {
