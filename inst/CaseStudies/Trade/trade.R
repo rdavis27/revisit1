@@ -10,9 +10,9 @@ getTrade <- function(overwrite=FALSE) {
    dd <- as.data.frame(xx[!is.na(xx[,1]),c(1,10,6,2)])
    colnames(dd) <- c("Year","Imports","Exports","Balance")
    # Convert from $millions to $billions
-   dd$Balance <- dd$Balance / 1000
-   dd$Exports <- dd$Exports / 1000
    dd$Imports <- dd$Imports / 1000
+   dd$Exports <- dd$Exports / 1000
+   dd$Balance <- dd$Balance / 1000
    trade <- dd
 }
 gdp <- getGDP(span="year", overwrite=FALSE)
@@ -22,10 +22,9 @@ maxyr <- min(max(gdp$year), max(trade$Year))
 gdp   <- gdp  [gdp$year   >= minyr & gdp$year   <= maxyr,]
 trade <- trade[trade$Year >= minyr & trade$Year <= maxyr,]
 tradegdp <- trade
-tradegdp$Balance <- 100 * tradegdp$Balance / gdp$gdp_curr
-tradegdp$Exports <- 100 * tradegdp$Exports / gdp$gdp_curr
 tradegdp$Imports <- 100 * tradegdp$Imports / gdp$gdp_curr
-print(tradegdp)
+tradegdp$Exports <- 100 * tradegdp$Exports / gdp$gdp_curr
+tradegdp$Balance <- 100 * tradegdp$Balance / gdp$gdp_curr
 #X11() # comment out if using png and readPNG
 tradem <- melt(tradegdp, id="Year")
 vcolor <- c("blue","green","red")
@@ -41,3 +40,16 @@ gg <- ggplot(tradem, aes(x=Year, y=value, group=variable)) +
    labs(x = "Source: https://www.census.gov/foreign-trade/statistics/historical/goods.xls") +
    labs(y = "Percent of GDP")
 print(gg)
+trade$GDP      <- gdp$gdp_curr
+trade$ImportsP <- tradegdp$Imports
+trade$ExportsP <- tradegdp$Exports
+trade$BalanceP <- tradegdp$Balance
+trade$Imports <- format(round(trade$Imports, 1), nsmall = 1, big.mark = ",")
+trade$Exports <- format(round(trade$Exports, 1), nsmall = 1, big.mark = ",")
+trade$Balance <- format(round(trade$Balance, 1), nsmall = 1, big.mark = ",")
+trade$GDP     <- format(round(trade$GDP,     1), nsmall = 1, big.mark = ",")
+trade$ImportsP <- format(round(trade$ImportsP, 3), nsmall = 1)
+trade$ExportsP <- format(round(trade$ExportsP, 3), nsmall = 1)
+trade$BalanceP <- format(round(trade$BalanceP, 3), nsmall = 1)
+colnames(trade) <- c("Year"," Imports"," Exports"," Balance","      GDP","Imports%","Exports%","Balance%")
+print(trade)
