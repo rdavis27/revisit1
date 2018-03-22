@@ -8,3 +8,4 @@ n, label,                           file,                      desc
 0, "Programmers and Engineers", "PrgEng/prgeng", "analysis of salaries of programmers and engineers in Silicon Valley, 2000"
 0, "U.S. GDP Growth", "GDP/GDP", "plot U.S. GDP growth from BEA data"
 0, "U.S. Trade", "Trade/trade", "plot U.S. Trade data from U.S. Census Bureau"
+0, "Worker per retiree ratios", "PSR/PSR", "plot worker per retiree ratios from U.N. data"
