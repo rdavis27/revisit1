@@ -80,6 +80,11 @@ ui <- miniPage(
             # textInput("syscmd", NULL, value = ""),
             # actionButton("syscmdsubmit", "Submit System Command", icon("refresh")),
             # verbatimTextOutput("syscmdoutput")
+         ),
+         tabPanel(
+            "README",
+            h4("README for Example"),
+            htmlOutput("readme")
          )
       )
    )

@@ -176,6 +176,15 @@ shinyServer(function(input, output, session) {
       #grid::grid.raster(mypng, width=0.5, height=1)
    })
 
+   output$readme <- renderText({
+      iend <- regexpr("/[^/]*$", input$file)
+      filedir <- substr(input$file, 1, iend)
+      filename <- paste0(casepath,"/",filedir,"/README")
+      if (file.exists(filename)){
+         includeMarkdown(filename)
+      }
+   })
+   
    observeEvent(input$cases, {
       cases <- input$cases
       file <- caselist$file[caselist$label == cases]
