@@ -36,7 +36,7 @@ ui <- miniPage(
                )
             ),
             stableColumnLayout(
-               textInput("file", "Filename (w/o Branch# or .R)", value = "Pima/pima"),
+               textInput("infile", "Filename (w/o Branch# or .R)", value = "Pima/pima"),
                numericInput("runstart", "Run Start Line", value = 1),
                numericInput("saveBn", "Save Branch #", value = 1)
             ),
@@ -55,7 +55,8 @@ ui <- miniPage(
             aceEditor("ace", value = "...",mode='r', fontSize = 20),
             stableColumnLayout(
                numericInput("aceFontSize", "Editor Font Size", value = 20),
-               numericInput("pcount", "P-value/CI Count", value = 0)
+               numericInput("pcount", "P-value/CI Count", value = 0),
+               checkboxInput("dropbox", "Use Dropbox", value = FALSE)
             )
          ),
          tabPanel(

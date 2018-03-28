@@ -41,8 +41,8 @@ makebranch0 <- function(origcodenm) {
 # whose name is the concatenization of our original prefix
 # rvenv$currbasenm; the midfix; and '.R'; the note desc describes
 # the branch
-saveb <- function(midfix, desc, username) {
-   username <- NULL
+saveb <- function(midfix, desc, br=NULL) {
+   #username <- NULL # no longer used
    code <- rvenv$currcode
    # add lines at top of file with the description of the branch,
    # consisting of the change history
@@ -60,6 +60,12 @@ saveb <- function(midfix, desc, username) {
            '# WARNING: RV history missing and recreated',
            paste('# Time:',Sys.time(),'\n# Revisited by: ','\n#',desc),'# RV history end')
       code <- c(toplines,code)
+   }
+   if (!is.null(br)){
+      rvenv$currb <<- br
+      tmp <- tools::file_path_sans_ext(br)  # remove '.R'
+      tmp <- tools::file_path_sans_ext(tmp)  # remove branch number
+      rvenv$currbasenm <<- tmp
    }
    branchname <- paste(rvenv$currbasenm,'.',midfix,'.R',sep='')
    # should add code asking user if OK to overwrite

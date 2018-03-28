@@ -36,88 +36,109 @@ shinyServer(function(input, output, session) {
       }
    }
 
-   doLoad <- function(file, loadBn){
+   doLoad <- function(infile, loadBn){
       status <- ""
-      if (loadBn < 0){
-         filename <- paste0(file, ".R")
-         pathfilename <- paste0(casepath,"/",filename) # one common .R file
-      } else if (loadBn == 0){
-         filename <- paste0(file, ".0.R")
-         pathfilename <- paste0(casepath,"/",filename) # one common .0.R file
-         # always recreate the .0.R file
-         filename0 <- paste0(file, ".R")
-         pathfilename0 <- paste0(casepath,"/",filename0)
-         if (file.exists(pathfilename0)){
-            makebranch0(pathfilename0)
+      iend <- regexpr("/[^/]*$", infile)
+      infiledir <- substr(infile, 1, (iend-1)) # no trailing slash
+      fullpath    <- paste0("revisit/",input$username,"/",casepath)
+      fullfiledir <- paste0(fullpath,"/",infiledir)
+      if (loadBn <= 0){
+         infilename  <- paste0(infile, ".R")
+         infilename0 <- paste0(infile, ".0.R")
+         casefilename <- paste0(casepath,"/",infilename) # one common .R file in casepath
+         fullfilename <- paste0(fullpath,"/",infilename)
+         if (file.exists(fullfilename) == FALSE){
+            if (dir.exists(fullfiledir) == FALSE){
+               dir.create(fullfiledir, recursive = TRUE)
+            }
+            file.copy(casefilename, fullfiledir) # copy to user directory
+         }
+         if (loadBn == 0){
+            makebranch0(fullfilename) # always create .0.R file
+            infilename <- infilename0
+            fullfilename <- paste0(fullpath,"/",infilename0)
          }
       } else {
-         filename <- paste0(file, ".", as.character(loadBn), ".R")
-         pathfilename <- paste0(input$username,"/",casepath,"/",filename)
-         if (!file.exists(pathfilename)){
-            outputfile <- paste0("revisit","/",pathfilename)
-            iend <- regexpr("/[^/]*$", pathfilename)
-            pathfiledir <- substr(pathfilename, 1, iend)
-            if (dir.exists(pathfiledir) == FALSE){
-               dir.create(pathfiledir, recursive = TRUE)
+         infilename <- paste0(infile, ".", as.character(loadBn), ".R")
+         fullfilename <- paste0(fullpath,"/",infilename)
+         if (input$dropbox){
+            if (file.exists(fullfilename) == FALSE){
+               fullfiledir <- paste0(fullpath,"/",infiledir)
+               if (dir.exists(fullfiledir) == FALSE){
+                  dir.create(fullfiledir, recursive = TRUE)
+               }
+               tryCatch(drop_download(fullfilename, local_path = fullfilename),
+                        warning = function(w) {
+                           cat(file=stderr(), paste0("WARNING: ", w))
+                        },
+                        error = function(e) {
+                           cat(file=stderr(), paste0("***** ", e))
+                           cat(file=stderr(), paste0("***** File ", fullfilename, " not found\n"))
+                           if (file.exists(fullfilename)) file.remove(fullfilename)
+                        })
             }
-            tryCatch(drop_download(outputfile, local_path = pathfilename),
-                     warning = function(w) {
-                        cat(file=stderr(), paste0("WARNING: ", w))
-                     },
-                     error = function(e) {
-                        cat(file=stderr(), paste0("***** ", e))
-                        cat(file=stderr(), paste0("***** File ", outputfile, " not found\n"))
-                        if (file.exists(pathfilename)) file.remove(pathfilename)
-                     })
          }
       }
-      if (file.exists(pathfilename)){
-         loadb(pathfilename)
+      if (file.exists(fullfilename)){
+         loadb(fullfilename)
          loadBn_succ <<- loadBn
-         status <- paste(filename, "loaded")
+         status <- paste(infilename, "loaded")
          currcode <- paste(rvenv$currcode, collapse = '\n')
          updateAceEditor(session, "ace", value = currcode, fontSize = input$aceFontSize)
          updateNumericInput(session, "runstart", value = 1)
          updateNumericInput(session, "runthru",  value = length(rvenv$currcode))
          nextBn <- loadBn + 1
-         filename <- paste0(file, ".", as.character(nextBn), ".R")
-         pathfilename <- paste0(input$username,"/",casepath,"/",filename)
-         while (file.exists(pathfilename)){
+         infilename <- paste0(infile, ".", as.character(nextBn), ".R")
+         fullfilename <- paste0(fullpath,"/",infilename)
+         while (file.exists(fullfilename)){
             nextBn <- nextBn + 1
-            filename <- paste0(file, ".", as.character(nextBn), ".R")
-            pathfilename <- paste0(input$username,"/",casepath,"/",filename)
+            infilename <- paste0(infile, ".", as.character(nextBn), ".R")
+            fullfilename <- paste0(fullpath,"/",infilename)
          }
          updateNumericInput(session, "saveBn",  value = nextBn)
       } else {
          if (!startOfSession){
             if (loadBn == 0){
-               status <- paste("***** ERROR:", pathfilename, "and", filename0, "not found")
+               status <- paste("***** ERROR:", fullfilename, "and", filename0, "not found")
             } else {
-               status <- paste("***** ERROR:", pathfilename, "not found")
+               status <- paste("***** ERROR:", fullfilename, "not found")
             }
          } else {
             startOfSession <<- FALSE
             #status <- "" # don't overwrite startup error
          }
       }
+      if (status != ""){
+         rv$statusmsg <<- status
+         print(status)
+      }
+   }
+
+   doSave <- function(infilename, saveBn, action){
+      description <- paste(input$username, "-", input$desc)
+      iend <- regexpr("/[^/]*$", infilename)
+      infiledir <- substr(infilename, 1, iend)
+      fullpath     <- paste0("revisit/",input$username,"/",casepath)
+      fullfiledir  <- paste0(fullpath,"/",infiledir)
+      fullfilename <- paste0(fullpath,"/",infilename)
+      if (dir.exists(fullfiledir) == FALSE){
+         dir.create(fullfiledir, recursive = TRUE)
+      }
+      saveb(saveBn, description, fullfilename)
+      status <- paste(infilename, "saved")
+      if (input$dropbox){
+         drop_upload(fullfilename, path = fullfiledir)
+         status <- paste(infilename, "saved to dropbox")
+      }
+      updateNumericInput(session, "loadBn",  value = saveBn)
       rv$statusmsg <<- status
       print(status)
    }
 
-   doSave <- function(file, saveBn, action){
-      description <- paste(input$username, "-", input$desc)
-      saveb(saveBn, description)
-      iend <- regexpr("/[^/]*$", file)
-      filedir <- substr(file, 1, iend)
-      outputdir <- paste0("revisit","/",input$username,"/",filedir)
-      drop_upload(file, path = outputdir)
-      updateNumericInput(session, "loadBn",  value = saveBn)
-   }
-
    reactiveLoad <- reactive({
-      file <- isolate(input$file)
+      infile <- isolate(input$infile)
       loadBn <- input$loadBn
-      doLoad(file, loadBn)
+      doLoad(infile, loadBn)
       return(list(loaded = rvenv$currcode))
    })
 
@@ -177,8 +198,8 @@ shinyServer(function(input, output, session) {
    })
 
    output$readme <- renderText({
-      iend <- regexpr("/[^/]*$", input$file)
-      filedir <- substr(input$file, 1, iend)
+      iend <- regexpr("/[^/]*$", input$infile)
+      filedir <- substr(input$infile, 1, iend)
       filename <- paste0(casepath,"/",filedir,"/README")
       if (file.exists(filename)){
          includeMarkdown(filename)
@@ -187,18 +208,18 @@ shinyServer(function(input, output, session) {
    
    observeEvent(input$cases, {
       cases <- input$cases
-      file <- caselist$file[caselist$label == cases]
+      infile <- caselist$file[caselist$label == cases]
       desc <- caselist$desc[caselist$label == cases]
-      cat(file=stderr(), paste0("##### Case=", cases, ", file=", file, "\n"))
+      cat(file=stderr(), paste0("##### Case=", cases, ", file=", infile, "\n"))
       updateTextInput(session, "desc", value = desc)
-      updateTextInput(session, "file", value = file)
-      doLoad(file, 0)
+      updateTextInput(session, "file", value = infile)
+      doLoad(infile, 0)
    })
 
    observeEvent(input$loadb, {
-      file <- input$file
+      infile <- input$infile
       loadBn <- input$loadBn
-      doLoad(file, loadBn)
+      doLoad(infile, loadBn)
    })
 
    observeEvent(input$nxt, {
@@ -268,7 +289,7 @@ shinyServer(function(input, output, session) {
    })
 
    observeEvent(input$saveb, {
-      file <- input$file
+      infile <- input$infile
       saveBn <- input$saveBn
       username <- input$username # add username to revisit comment
       if (is.null(loadBn_succ)){
@@ -301,15 +322,16 @@ shinyServer(function(input, output, session) {
          ))
          return()
       }
-      filename <- paste0(casepath, "/", file, ".", as.character(saveBn), ".R") # prepend casepath
-      if (file.exists(filename)){
-         question <- paste("WARNING: ", filename, "exists. Overwrite it?")
-         sfilename <<- filename
+      infilename <- paste0(infile, ".", as.character(saveBn), ".R")
+      fullfilename <- paste0("revisit/",input$username,"/",casepath,"/",infilename)
+      if (file.exists(fullfilename)){
+         question <- paste("WARNING: ", infilename, "exists. Overwrite it?")
+         saveinfilename <<- infilename
          showModal(yesNoModal(msg = question, yesAction="ok", yesLabel="Yes", noLabel="No"))
          return()
       }
       rvenv$currcode <- unlist(strsplit(input$ace, "\n")) # update currcode
-      doSave(filename, input$saveBn, "SAVE")
+      doSave(infilename, input$saveBn, "SAVE")
    })
 
    yesNoModal <- function(msg="Continue?", yesAction="yes", yesLabel="Yes", noLabel="No"){
@@ -324,7 +346,7 @@ shinyServer(function(input, output, session) {
 
    observeEvent(input$ok, {
       rvenv$currcode <- unlist(strsplit(input$ace, "\n")) # update currcode
-      doSave(sfilename, input$saveBn, "OVERWRITE")
+      doSave(saveinfilename, input$saveBn, "OVERWRITE")
       removeModal()
    })
 
