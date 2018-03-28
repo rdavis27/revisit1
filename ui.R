@@ -56,7 +56,7 @@ ui <- miniPage(
             stableColumnLayout(
                numericInput("aceFontSize", "Editor Font Size", value = 20),
                numericInput("pcount", "P-value/CI Count", value = 0),
-               checkboxInput("offline", "Use Offline Storage", value = FALSE)
+               checkboxInput("remote", "Use Remote Storage", value = FALSE)
             )
          ),
          tabPanel(

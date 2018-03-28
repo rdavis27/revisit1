@@ -61,7 +61,7 @@ shinyServer(function(input, output, session) {
       } else {
          infilename <- paste0(infile, ".", as.character(loadBn), ".R")
          fullfilename <- paste0(fullpath,"/",infilename)
-         if (input$offline){
+         if (input$remote){
             if (file.exists(fullfilename) == FALSE){
                fullfiledir <- paste0(fullpath,"/",infiledir)
                if (dir.exists(fullfiledir) == FALSE){
@@ -126,9 +126,9 @@ shinyServer(function(input, output, session) {
       }
       saveb(saveBn, description, fullfilename)
       status <- paste(infilename, "saved")
-      if (input$offline){
+      if (input$remote){
          drop_upload(fullfilename, path = fullfiledir)
-         status <- paste(infilename, "saved offline")
+         status <- paste(infilename, "saved remotely")
       }
       updateNumericInput(session, "loadBn",  value = saveBn)
       rv$statusmsg <<- status
