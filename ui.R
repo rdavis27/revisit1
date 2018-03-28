@@ -56,7 +56,7 @@ ui <- miniPage(
             stableColumnLayout(
                numericInput("aceFontSize", "Editor Font Size", value = 20),
                numericInput("pcount", "P-value/CI Count", value = 0),
-               checkboxInput("dropbox", "Use Dropbox", value = FALSE)
+               checkboxInput("offline", "Use Offline Storage", value = FALSE)
             )
          ),
          tabPanel(

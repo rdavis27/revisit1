@@ -61,7 +61,7 @@ shinyServer(function(input, output, session) {
       } else {
          infilename <- paste0(infile, ".", as.character(loadBn), ".R")
          fullfilename <- paste0(fullpath,"/",infilename)
-         if (input$dropbox){
+         if (input$offline){
             if (file.exists(fullfilename) == FALSE){
                fullfiledir <- paste0(fullpath,"/",infiledir)
                if (dir.exists(fullfiledir) == FALSE){
@@ -126,9 +126,9 @@ shinyServer(function(input, output, session) {
       }
       saveb(saveBn, description, fullfilename)
       status <- paste(infilename, "saved")
-      if (input$dropbox){
+      if (input$offline){
          drop_upload(fullfilename, path = fullfiledir)
-         status <- paste(infilename, "saved to dropbox")
+         status <- paste(infilename, "saved offline")
       }
       updateNumericInput(session, "loadBn",  value = saveBn)
       rv$statusmsg <<- status
@@ -212,7 +212,7 @@ shinyServer(function(input, output, session) {
       desc <- caselist$desc[caselist$label == cases]
       cat(file=stderr(), paste0("##### Case=", cases, ", file=", infile, "\n"))
       updateTextInput(session, "desc", value = desc)
-      updateTextInput(session, "file", value = infile)
+      updateTextInput(session, "infile", value = infile)
       doLoad(infile, 0)
    })
 
